@@ -1,0 +1,33 @@
+image: cypress/browsers:node16.14.2-slim-chrome100-ff99-edge
+
+ui-tests: &ui-tests
+  name: "UI Tests"
+  caches:
+    - cypress
+    - node
+  script:
+    - yarn start & npx wait-on http://localhost:3000
+    - npx cypress run --record --parallel --browser chrome --group "UI" --spec "cypress/e2e/*" --ci-build-id $BITBUCKET_BUILD_NUMBER
+
+pipelines:
+  default:
+    - step:
+        name: Install dependencies and build frontend application
+        caches:
+          - yarn
+          - cypress
+          - node
+        script:
+          - yarn install --frozen-lockfile
+          #- yarn test:unit:ci
+          - yarn build:ci
+        artifacts:
+          - build/**
+    - parallel:
+        - step:
+            <<: *ui-tests
+
+definitions:
+  caches:
+    yarn: $HOME/.cache
+    cypress: $HOME/.cache/Cypress
